@@ -173,33 +173,46 @@ foreach my $line(split('\n', $response->decoded_content)) {
     }
 }
 
+
 # Gather perfomance data
 foreach my $interest(@interests) {
-   $np->add_perfdata(
+		$np->add_perfdata(
         label => $interest,
         value => defined($nodes{$interest}) ? $nodes{$interest} : 0,
         uom   => undef,
+		
     );
 }
 
-# Compare each threshold per interest to determine the status
-my $check = 'OK';
+
+# Gather values for status details
+
+my $details = '';
 
 foreach (@interests) {
-    if ($check ne 'CRITICAL'){
-        if ($check ne 'WARNING'){
+    if ($nodes{$_} >= $thresholds_warning{$_}){           
+		$details = $details . $_ . " = " . $nodes{$_} . "; ";
+	}
+}
+
+# Compare each threshold per interest to determine the status
+
+my $status = 'OK';
+
+foreach (@interests) {
+    if ($status ne 'CRITICAL'){
+        if ($status ne 'WARNING'){
             if ($nodes{$_} >= $thresholds_warning{$_}){
-                $check = 'WARNING';
+                $status = 'WARNING';
             }
         }
         if ($nodes{$_} >= $thresholds_critical{$_}){
-            $check = 'CRITICAL';
-        }
-    }    
-    else {
-        $np->nagios_exit($check, '');
-    }
+            $status = 'CRITICAL';
+        }   	
+	} else {
+		last;
+	}
 }
 
-$np->nagios_exit($check, '');
+$np->nagios_exit($status,$details);
 
