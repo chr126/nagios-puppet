@@ -176,7 +176,7 @@ foreach my $line(split('\n', $response->decoded_content)) {
 
 # Gather perfomance data
 foreach my $interest(@interests) {
-		$np->add_perfdata(
+$np->add_perfdata(
         label => $interest,
         value => defined($nodes{$interest}) ? $nodes{$interest} : 0,
         uom   => undef,
