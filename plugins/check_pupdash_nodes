@@ -29,67 +29,67 @@ use LWP;
 use Nagios::Plugin;
 
 my $np = Nagios::Plugin->new(
-    usage     => "Usage: %s [-H|--host=<host> ] [ -p|--port=<port> ] [-U|--httpuser=<user>] [-P|--httppass=<pass>] [-V|--version=<version>] [-h|--help=<usage>] [-w|--warning=<thresholds>] [-c|--critical=<thresholds>]
-    
+	usage	=> "Usage: %s [-H|--host=<host> ] [ -p|--port=<port> ] [-U|--httpuser=<user>] [-P|--httppass=<pass>] [-V|--version=<version>] [-h|--help=<usage>] [-w|--warning=<thresholds>] [-c|--critical=<thresholds>]
+	
 	The parameters for warning and critical need six values separated by ','. These values represent the following states: unresponsive, failed, pending, changed, unchanged, unreported. 
 	For example '-w 1,1,5,10,999,1 -c 2,2,10,20,1000,2'.",
-    shortname => 'Dashboard Hosts',
+	shortname => 'Dashboard Hosts',
 );
 
 $np->add_arg(
-    spec     => 'host|H=s',
-    help     => '-H, --host=Hostname or IP address',
-    required => 1,
+	spec	=> 'host|H=s',
+	help	=> '-H, --host=Hostname or IP address',
+	required=> 1,
 );
 
 $np->add_arg(
-    spec    => 'port|p=s',
-    help    => '-p, --port=port',
-    default => 80,
+	spec	=> 'port|p=s',
+	help	=> '-p, --port=port',
+	default	=> 80,
 );
 
 $np->add_arg(
-    spec    => 'httpuser|U=s',
-    help    => '-U, --user=user',
+	spec	=> 'httpuser|U=s',
+	help	=> '-U, --user=user',
 );
 
 $np->add_arg(
-    spec    => 'httppass|P=s',
-    help    => '-P, --pass=pass',
+	spec	=> 'httppass|P=s',
+	help	=> '-P, --pass=pass',
 );
 
 $np->add_arg(
-    spec    => 'realm|r=s',
-    help    => '-r, --realm=realm',
-    default => 'Puppet Dashboard'
+	spec	=> 'realm|r=s',
+	help	=> '-r, --realm=realm',
+	default	=> 'Puppet Dashboard'
 );
 
 $np->add_arg(
-    spec    => 'ssl|s',
-    help    => '-s, --ssl   Use SSL (For when puppet dashboard is behind https)',
+	spec	=> 'ssl|s',
+	help	=> '-s, --ssl   Use SSL (For when puppet dashboard is behind https)',
 );
 
 $np->add_arg(
-    spec     => 'warning|w=s',
-    help     => '-w, --warning=INTEGER',
-    required => 1
+	spec	=> 'warning|w=s',
+	help	=> '-w, --warning=INTEGER',
+	required=> 1
 );
 
 $np->add_arg(
-    spec     => 'critical|c=s',
-    help     => '-c, --critical=INTEGER',
-    required => 1
+	spec	=> 'critical|c=s',
+	help	=> '-c, --critical=INTEGER',
+	required=> 1
 );
 
 $np->getopts;
 
 my @interests = (
-    'unresponsive',
-    'failed',
-    'pending',
-    'changed',
-    'unchanged',
-    'unreported'
+	'unresponsive',
+	'failed',
+	'pending',
+	'changed',
+	'unchanged',
+	'unreported'
 );
 
 # Split inputs for --warning and --critical into arrays
@@ -98,12 +98,12 @@ my @critical = split (',', $np->opts->critical);
 
 # Check if all options that require numbers only have numbers as arguments
 foreach (@warning, @critical, $np->opts->port){
-    if ($_ =~ /^-?\d+$/){
-    }
-    else {
-        print "Invalid arguments. Please check your input.\n";
-        exit;
-    }
+	if ($_ =~ /^-?\d+$/){
+	}
+	else {
+		print "Invalid arguments. Please check your input.\n";
+		exit;
+	}
 };
 
 # Define error message to prevent redundancy
@@ -112,22 +112,22 @@ my $errorcommand2 = "'. Please check your input.\n";
 
 # Check number of input thresholds
 if (@warning != @interests) {
-    my $errortype = "-w, --warning";
-    print $errorcommand1, $errortype, $errorcommand2;
-    exit;
+	my $errortype = "-w, --warning";
+	print $errorcommand1, $errortype, $errorcommand2;
+	exit;
 };
 
 if (@critical != @interests) {
-    my $errortype = "-c, --critical";
-    print $errorcommand1, $errortype, $errorcommand2;
-    exit;
+	my $errortype = "-c, --critical";
+	print $errorcommand1, $errortype, $errorcommand2;
+	exit;
 };
 
 # Make sure that values of "warning" are smaller than values of "critical"
 for (my $i = 0; $i < @warning; $i++) {
-    if ($warning[$i] >= $critical[$i]) {
-        print "At least one threshold of 'warning' is equal to or bigger than a threshold of 'critical'. Please check your input.\n";
-        exit;
+	if ($warning[$i] >= $critical[$i]) {
+		print "At least one threshold of 'warning' is equal to or bigger than a threshold of 'critical'. Please check your input.\n";
+		exit;
     };
 };
 
@@ -136,51 +136,51 @@ my %thresholds_warning = ();
 my %thresholds_critical = ();
 
 for (my $j = 0; $j < @warning; $j++) {
-    $thresholds_warning{$interests[$j]} = $warning[$j];
-    $thresholds_critical{$interests[$j]} = $critical[$j];
+	$thresholds_warning{$interests[$j]} = $warning[$j];
+	$thresholds_critical{$interests[$j]} = $critical[$j];
 };
 
 our $domain = sprintf('%s:%d',
-    $np->opts->host,
-    $np->opts->port
+	$np->opts->host,
+	$np->opts->port
 ),
 
 my $url = sprintf('http%s://%s/', 
-    defined($np->opts->ssl) ? 's' : '',
-    $domain,
+	defined($np->opts->ssl) ? 's' : '',
+	$domain,
 );
 
 my $ua = new LWP::UserAgent;
 if (defined($np->opts->httpuser)) {
-  $ua->credentials(
-    $domain,
-    $np->opts->realm,
-    $np->opts->httpuser,
-    $np->opts->httppass
-  );
+	$ua->credentials(
+		$domain,
+		$np->opts->realm,
+		$np->opts->httpuser,
+		$np->opts->httppass
+	);
 }
 my $response = $ua->get($url);
 
 if (!$response->is_success) {
-    # We failed
-    $np->nagios_exit('UNKNOWN', $response->code . ": " . $response->status_line);
+	# We failed
+	$np->nagios_exit('UNKNOWN', $response->code . ": " . $response->status_line);
 }
 
 # Parse the markup, loading up anything that matches into the %nodes hash
 my %nodes;
 foreach my $line(split('\n', $response->decoded_content)) {
-    if($line=~m/<a href="\/nodes\/(\w+)">(\d+)<\/a>/) {
-        $nodes{$1} = $2;
-    }
+	if($line=~m/<a href="\/nodes\/(\w+)">(\d+)<\/a>/) {
+		$nodes{$1} = $2;
+	}
 }
 
 
 # Gather perfomance data
 foreach my $interest(@interests) {
 $np->add_perfdata(
-        label => $interest,
-        value => defined($nodes{$interest}) ? $nodes{$interest} : 0,
-        uom   => undef,
+		label	=> $interest,
+		value	=> defined($nodes{$interest}) ? $nodes{$interest} : 0,
+		uom		=> undef,
     );
 }
 
@@ -188,7 +188,7 @@ $np->add_perfdata(
 # Gather values for status details
 my $details = '';
 foreach (@interests) {
-    if ($nodes{$_} >= $thresholds_warning{$_}){           
+	if ($nodes{$_} >= $thresholds_warning{$_}){           
 		$details = $details . $_ . " = " . $nodes{$_} . "; ";
 	}
 }
@@ -197,19 +197,18 @@ foreach (@interests) {
 my $status = 'OK';
 
 foreach (@interests) {
-    if ($status ne 'CRITICAL'){
-        if ($status ne 'WARNING'){
-            if ($nodes{$_} >= $thresholds_warning{$_}){
-                $status = 'WARNING';
-            }
-        }
-        if ($nodes{$_} >= $thresholds_critical{$_}){
-            $status = 'CRITICAL';
-        }   	
+	if ($status ne 'CRITICAL'){
+		if ($status ne 'WARNING'){
+			if ($nodes{$_} >= $thresholds_warning{$_}){
+				$status = 'WARNING';
+			}
+		}
+		if ($nodes{$_} >= $thresholds_critical{$_}){
+			$status = 'CRITICAL';
+		}   	
 	} else {
 		last;
 	}
 }
 
 $np->nagios_exit($status,$details);
-
