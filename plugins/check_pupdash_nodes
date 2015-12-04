@@ -31,7 +31,8 @@ use Nagios::Plugin;
 my $np = Nagios::Plugin->new(
     usage     => "Usage: %s [-H|--host=<host> ] [ -p|--port=<port> ] [-U|--httpuser=<user>] [-P|--httppass=<pass>] [-V|--version=<version>] [-h|--help=<usage>] [-w|--warning=<thresholds>] [-c|--critical=<thresholds>]
     
-    Information about arguments for '--warning' and '--critical' can be found in this file at 'my %interests'",
+	The parameters for warning and critical need six values separated by ','. These values represent the following states: unresponsive, failed, pending, changed, unchanged, unreported. 
+	For example '-w 1,1,5,10,999,1 -c 2,2,10,20,1000,2'.",
     shortname => 'Dashboard Hosts',
 );
 
@@ -176,19 +177,16 @@ foreach my $line(split('\n', $response->decoded_content)) {
 
 # Gather perfomance data
 foreach my $interest(@interests) {
-    $np->add_perfdata(
+$np->add_perfdata(
         label => $interest,
         value => defined($nodes{$interest}) ? $nodes{$interest} : 0,
         uom   => undef,
-		
     );
 }
 
 
 # Gather values for status details
-
 my $details = '';
-
 foreach (@interests) {
     if ($nodes{$_} >= $thresholds_warning{$_}){           
 		$details = $details . $_ . " = " . $nodes{$_} . "; ";
@@ -196,7 +194,6 @@ foreach (@interests) {
 }
 
 # Compare each threshold per interest to determine the status
-
 my $status = 'OK';
 
 foreach (@interests) {
